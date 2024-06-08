@@ -1,116 +1,51 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import styles from './CommonNav.module.scss'
+import navJson from './nav.json'
+import { useRecoilState } from 'recoil'
+import { pageState } from '@/recoil/atoms/pageState'
+import { searchState } from '@/recoil/atoms/searchState'
 
 interface Navigation {
     index: number,
     path: string,
     label: string,
     searchValue: string,
-    isActive: boolean, 
+    isActive: boolean,
 }
 
 function CommonNav() {
-    const [navigation, setNavigation] = useState<Navigation[]>([
-        {
-            index:0,
-            path:'/edit',
-            label:'보도/편집 전용',
-            searchValue: 'edit',
-            isActive: false,
-        },
-        {
-            index:1,
-            path:'/following',
-            label:'팔로잉',
-            searchValue: 'following',
-            isActive: false,
-        },
-        {
-            index:2,
-            path:'/photo',
-            label:'Unsplash Photo',
-            searchValue: 'photo',
-            isActive: false,
-        },
-        {
-            index:3,
-            path:'/oneColor',
-            label:'단색',
-            searchValue: 'one Color',
-            isActive: false,
-        },
-        {
-            index:4,
-            path:'/3dRender',
-            label:'3D 렌더링',
-            searchValue: '3d rendering',
-            isActive: false,
-        },
-        {
-            index:5,
-            path:'/nature',
-            label:'자연',
-            searchValue: 'nature',
-            isActive: false,
-        },
-        {
-            index:6,
-            path:'/texture',
-            label:'텍스쳐 및 패턴',
-            searchValue: 'texture',
-            isActive: false,
-        },
-        {
-            index:7,
-            path:'/interior',
-            label:'인테리어',
-            searchValue: 'interior',
-            isActive: false,
-        },
-        {
-            index:8,
-            path:'/film',
-            label:'필름',
-            searchValue: 'film',
-            isActive: false,
-        },
-        {
-            index:9,
-            path:'/experimental',
-            label:'실험적인',
-            searchValue: 'experimental',
-            isActive: false,
-        },
-        {
-            index:10,
-            path:'/travel',
-            label:'여행',
-            searchValue: 'travel',
-            isActive: false,
-        },
-        {
-            index:11,
-            path:'/sports',
-            label:'스포츠',
-            searchValue: 'sports',
-            isActive: false,
-        },
+    const location = useLocation()
+    const [navigation, setNavigation] = useState<Navigation[]>(navJson)
+    const [page, setPage] = useRecoilState(pageState)
+    const [search, setSearch] = useRecoilState(searchState)
 
-    ])
+    useEffect(() => {
+        console.log(location.pathname)
+        navigation.forEach((nav: Navigation) => {
+            nav.isActive = false
+
+            if (nav.path === location.pathname || location.pathname.includes(nav.path)) {
+                nav.isActive = true
+                setSearch(nav.searchValue)
+                setPage(1)          //초기화
+            }
+        })
+        setNavigation([...navigation])
+    }, [location.pathname])
 
     //useState로 선언한 반응성을 가진 데이터 기반으로 UI를 반복호출해보도록 한다.
-    const navLinks = navigation.map((item :Navigation) => {
+    const navLinks = navigation.map((item: Navigation) => {
         return (
-            <Link to={item.path} className={styles.navigation__menu} key={item.path}>
+            <Link to={item.path} className={item.isActive ? `${styles.navigation__menu} ${styles.active}` : `${styles.navigation__menu} ${styles.inactive}`} key={item.path}>
                 <span className={styles.navigation__menu__label}>{item.label}</span>
             </Link>
         )
     })
 
-  return (
-    <nav className={styles.navigation}>{navLinks}</nav>
-  )
+    return (
+        <nav className={styles.navigation}>{navLinks}</nav>
+    )
 }
 
 export default CommonNav

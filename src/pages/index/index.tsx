@@ -1,50 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { imageData } from '@/recoil/selectors/imageSelectors'
 import CommonHeader from '@components/common/header/CommonHeader'
 import CommonSearchBar from '@/components/common/searchBar/CommonSearchBar'
 import CommonNav from '@/components/common/navigation/CommonNav'
 import CommonFooter from '@/components/common/footer/CommonFooter'
 import Card from './component/Card'
+import { useRecoilValueLoadable } from 'recoil'
 // CSS
 import styles from './styles/index.module.scss'
-import axios from 'axios'
-import {CardDTO} from './types/card'
+import { CardDTO } from './types/card'
+import DetailDialog from '@/components/common/dialog/DetailDialog'
+import Loading from './component/Loading'
 
 
 function index() {
-    const [imgUrls,setImgUrls] = useState([])
-    const getData = async () => {
-        //오픈 API 호출
-        const API_URL = 'https://api.unsplash.com/search/photos'
-        const API_KEY = 'CaYbiFNSpml0cKUSyW6CKaypCEavb7XMjHMJqWsPThk'
-        const PER_PAGE = 30
-        
-        const searchValue = 'korea'
-        const pageValue = 100
+    // const imageSelector = useRecoilValue(imageData)     //Recoil 상태에서 데이터를 가져옵니다.(동기적)
+    const imageSelector = useRecoilValueLoadable(imageData) //Recoil 상태에서 데이터를 가져옵니다.(비동기적)
+    const [imgData, setImgData] = useState<CardDTO>()    //이미지 데이터를 저장하는 상태 변수입니다.
+    const [open, setOpen] = useState<boolean>(false)    // 이미지 상세 다이얼로그 발생(관리) State
 
-        try{
-            const res = await axios.get(`${API_URL}?query=${searchValue}&client_id=${API_KEY}&page=${pageValue}&per_page=${PER_PAGE}`)
-            console.log(res)
-            // res.data.results라는 배열을 활용할 예정
-
-            if(res.status === 200) {
-                setImgUrls(res.data.results)
-            }
-        }catch(error) {
-            console.log(error)
+    const CARD_LIST = useMemo(() => {
+        // imageSelector.state = hasValue or loading
+        if (imageSelector.state === 'hasValue') {
+            const result = imageSelector.contents.results.map((card: CardDTO) => {
+                return (
+                    <Card data={card} key={card.id} handleDialog={setOpen} handleSetData={setImgData} />
+                )
+            })
+            return result
+        } else {
+            return <div><Loading /></div>
         }
-    }
+    }, [imageSelector])
 
-    const cardList = imgUrls.map((card:CardDTO) =>{
-        return (
-            <Card data={card} key={card.id} />
-        )
-    })
-
-    useEffect(() => {
-        getData()
-    }, [])
-
-    return(
+    return (
         <div className={styles.page}>
             {/* 공통 헤더 UI 부분 */}
             <CommonHeader />
@@ -62,11 +51,13 @@ function index() {
                         <CommonSearchBar />
                     </div>
                 </div>
-                <div className={styles.page__contents__imageBox}>{cardList}</div>
+                <div className={styles.page__contents__imageBox}>{CARD_LIST}</div>
             </div>
             {/* 공통 푸터 UI 부분 */}
             <CommonFooter />
-            </div>
+            {open && <DetailDialog data={imgData} handleDiaglog={setOpen} />}
+
+        </div>
     )
 }
 export default index
